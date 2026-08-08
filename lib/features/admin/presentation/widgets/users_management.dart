@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/notification_service.dart';
 import '../providers/admin_providers.dart';
@@ -326,6 +327,7 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
 
       try {
         final supabase = Supabase.instance.client;
+        // Valid UUID for system admin
         const systemAdminId = '00000000-0000-0000-0000-000000000001';
         final now = DateTime.now();
 
@@ -342,13 +344,22 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
           });
         }
 
-        // 2. Check or Create Conversation
-        String convId = 'admin_conv_$userId';
-        final existingConv = await supabase.from('conversations').select('id').eq('id', convId).maybeSingle();
+        // 2. Check for existing conversation between Admin and User
+        final conversations = await supabase.from('conversations').select('id, participants');
+        Map<String, dynamic>? existingConv;
+        for (final c in conversations) {
+          final p = List<String>.from(c['participants'] ?? []);
+          if (p.contains(systemAdminId) && p.contains(userId)) {
+            existingConv = c;
+            break;
+          }
+        }
 
+        String convId;
         final fullMsg = titleText.isNotEmpty ? '[$titleText]\n$msgText' : msgText;
 
         if (existingConv == null) {
+          convId = const Uuid().v4();
           await supabase.from('conversations').insert({
             'id': convId,
             'participants': [systemAdminId, userId],
@@ -358,6 +369,7 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
             'created_at': now.toIso8601String(),
           });
         } else {
+          convId = existingConv['id'].toString();
           await supabase.from('conversations').update({
             'last_message': fullMsg,
             'last_sender_id': systemAdminId,
@@ -365,9 +377,10 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
           }).eq('id', convId);
         }
 
-        // 3. Insert Message
+        // 3. Insert Message with valid UUID
+        final messageId = const Uuid().v4();
         await supabase.from('messages').insert({
-          'id': 'msg_${now.millisecondsSinceEpoch}',
+          'id': messageId,
           'conversation_id': convId,
           'sender_id': systemAdminId,
           'content': fullMsg,
@@ -386,7 +399,7 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
           'created_at': now.toIso8601String(),
         });
 
-        // 5. Trigger Push Notification
+        // 5. Trigger Push Notification via OneSignal
         await NotificationService.sendAdminDirectMessageNotification(
           recipientUserId: userId,
           title: titleText.isNotEmpty ? titleText : 'رسالة رسمية من إدارة التطبيق',

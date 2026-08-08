@@ -49665,12 +49665,12 @@ a0===$&&A.a()
 j=a0
 i=new A.cf(Date.now(),0,!1)
 s=10
-return A.q(j.dH("profiles").Ge("id").fA("id","admin_baytak_system").a29(),$async$kb)
+return A.q(j.dH("profiles").Ge("id").fA("id","00000000-0000-0000-0000-000000000001").a29(),$async$kb)
 case 10:h=a6
 s=h==null?11:12
 break
 case 11:s=13
-return A.q(j.dH("profiles").kE(0,A.Z(["id","admin_baytak_system","name","\u062a\u0637\u0628\u064a\u0642 \u0628\u064a\u062a\u0643","phone","01000000000","role","admin","verified",!0,"created_at",i.fo()],t.N,t.K)),$async$kb)
+return A.q(j.dH("profiles").kE(0,A.Z(["id","00000000-0000-0000-0000-000000000001","name","\u062a\u0637\u0628\u064a\u0642 \u0628\u064a\u062a\u0643","phone","01000000000","role","admin","verified",!0,"created_at",i.fo()],t.N,t.K)),$async$kb)
 case 13:case 12:g="admin_conv_"+A.l(k)
 s=14
 return A.q(j.dH("conversations").Ge("id").fA("id",g).a29(),$async$kb)
@@ -49679,15 +49679,15 @@ e=J.bp(m)!==0?"["+A.l(m)+"]\n"+A.l(l):l
 s=f==null?15:17
 break
 case 15:s=18
-return A.q(j.dH("conversations").kE(0,A.Z(["id",g,"participants",A.b(["admin_baytak_system",k],t.s),"last_message",e,"last_sender_id","admin_baytak_system","last_message_at",i.fo(),"created_at",i.fo()],t.N,t.K)),$async$kb)
+return A.q(j.dH("conversations").kE(0,A.Z(["id",g,"participants",A.b(["00000000-0000-0000-0000-000000000001",k],t.s),"last_message",e,"last_sender_id","00000000-0000-0000-0000-000000000001","last_message_at",i.fo(),"created_at",i.fo()],t.N,t.K)),$async$kb)
 case 18:s=16
 break
 case 17:a0=t.z
 s=19
-return A.q(j.dH("conversations").c0(A.Z(["last_message",e,"last_sender_id","admin_baytak_system","last_message_at",i.fo()],a0,a0)).fA("id",g),$async$kb)
+return A.q(j.dH("conversations").c0(A.Z(["last_message",e,"last_sender_id","00000000-0000-0000-0000-000000000001","last_message_at",i.fo()],a0,a0)).fA("id",g),$async$kb)
 case 19:case 16:a0=t.N
 s=20
-return A.q(j.dH("messages").kE(0,A.Z(["id","msg_"+i.a,"conversation_id",g,"sender_id","admin_baytak_system","content",e,"status","sent","type","text","created_at",i.fo()],a0,a0)),$async$kb)
+return A.q(j.dH("messages").kE(0,A.Z(["id","msg_"+i.a,"conversation_id",g,"sender_id","00000000-0000-0000-0000-000000000001","content",e,"status","sent","type","text","created_at",i.fo()],a0,a0)),$async$kb)
 case 20:b=j.dH("notifications")
 s=21
 return A.q(b.kE(0,A.Z(["user_id",k,"title","\u062a\u0637\u0628\u064a\u0642 \u0628\u064a\u062a\u0643 \ud83d\udd35: "+A.l(J.bp(m)!==0?m:"\u0631\u0633\u0627\u0644\u0629 \u0631\u0633\u0645\u064a\u0629"),"body",l,"type","admin_direct_message","read",!1,"created_at",i.fo()],a0,t.K)),$async$kb)
