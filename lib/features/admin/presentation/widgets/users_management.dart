@@ -329,17 +329,20 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
         final supabase = Supabase.instance.client;
 
         // Call server-side function that has SECURITY DEFINER privileges (bypasses RLS)
-        final result = await supabase.rpc('send_admin_message', params: {
+        final resData = await supabase.rpc('send_admin_message', params: {
           'p_user_id': userId,
           'p_title': titleText,
           'p_message': msgText,
         });
+
+        final convId = (resData is Map) ? resData['conversation_id']?.toString() : null;
 
         // Trigger Push Notification via OneSignal
         await NotificationService.sendAdminDirectMessageNotification(
           recipientUserId: userId,
           title: titleText.isNotEmpty ? titleText : 'رسالة رسمية من إدارة التطبيق',
           messageText: msgText,
+          conversationId: convId,
         );
 
         if (mounted) {

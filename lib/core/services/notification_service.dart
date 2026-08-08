@@ -101,6 +101,7 @@ class NotificationService {
     required String recipientUserId,
     required String title,
     required String messageText,
+    String? conversationId,
   }) async {
     await sendPushNotification(
       targetUserId: recipientUserId,
@@ -109,6 +110,7 @@ class NotificationService {
       data: {
         'type': 'admin_direct_message',
         'is_official': true,
+        'conversation_id': conversationId,
       },
     );
   }
