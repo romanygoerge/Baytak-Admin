@@ -1,7 +1,8 @@
 {
+  "version": 2,
   "cleanUrls": true,
-  "framework": null,
   "outputDirectory": "build/web",
+  "buildCommand": "echo 'Deploying prebuilt web output'",
   "rewrites": [
     {
       "source": "/(.*)",
