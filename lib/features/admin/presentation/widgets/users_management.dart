@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/notification_service.dart';
 import '../providers/admin_providers.dart';
 import '../widgets/admin_data_table.dart';
 
-/// Users management screen with search, filter, role change, block/unblock
+/// Users management screen with search, filter, role change, block/unblock, verified badge, & direct message
 class UsersManagement extends ConsumerStatefulWidget {
   const UsersManagement({super.key});
 
@@ -96,6 +98,8 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
                     ],
                     rows: filtered.map((u) {
                       final blocked = u['blocked'] == true;
+                      final isVerified = u['verified'] == true;
+
                       return DataRow(cells: [
                         DataCell(Row(
                           mainAxisSize: MainAxisSize.min,
@@ -107,7 +111,23 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
                               child: u['photo_url'] == null ? Text((u['name'] ?? '?')[0], style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primary)) : null,
                             ),
                             const SizedBox(width: 10),
-                            SizedBox(width: 120, child: Text(u['name'] ?? '', overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
+                            Flexible(
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      u['name'] ?? '',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                  if (isVerified) ...[
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.verified_rounded, color: Colors.blue, size: 16),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ],
                         )),
                         DataCell(Column(
@@ -127,9 +147,6 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
                             'officeOwner': (AppColors.warning, 'صاحب مكتب'),
                             'officeEmployee': (Color(0xFFEC4899), 'موظف مكتب'),
                             'moderator': (AppColors.success, 'مشرف'),
-                            'support': (Color(0xFF0EA5E9), 'دعم فني'),
-                            'marketing': (Color(0xFFF59E0B), 'تسويق'),
-                            'contentManager': (Color(0xFF6366F1), 'مدير محتوى'),
                           },
                         )),
                         DataCell(AdminStatusChip(
@@ -140,7 +157,7 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
                           },
                         )),
                         DataCell(Text(_formatDate(u['created_at']), style: const TextStyle(fontSize: 12))),
-                        DataCell(_buildActions(u, blocked)),
+                        DataCell(_buildActions(u, blocked, isVerified)),
                       ]);
                     }).toList(),
                   ),
@@ -167,10 +184,32 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
     );
   }
 
-  Widget _buildActions(Map<String, dynamic> user, bool blocked) {
+  Widget _buildActions(Map<String, dynamic> user, bool blocked, bool isVerified) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // ✉️ Send Direct Official Message Button
+        IconButton(
+          icon: const Icon(Icons.send_rounded, size: 18, color: Colors.blue),
+          tooltip: 'إرسال رسالة رسمية باسم تطبيق بيتك 🔵',
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          onPressed: () => _sendAdminMessageModal(user),
+        ),
+        const SizedBox(width: 4),
+        // 🌟 Toggle Verify Badge
+        IconButton(
+          icon: Icon(isVerified ? Icons.verified_user_rounded : Icons.verified_user_outlined, size: 18, color: isVerified ? Colors.blue : Colors.grey),
+          tooltip: isVerified ? 'إلغاء التوثيق' : 'توثيق الحساب 🌟',
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          onPressed: () async {
+            final supabase = Supabase.instance.client;
+            await supabase.from('profiles').update({'verified': !isVerified}).eq('id', user['id']);
+            setState(() {});
+          },
+        ),
+        const SizedBox(width: 4),
         // Role change
         PopupMenuButton<String>(
           icon: const Icon(Icons.admin_panel_settings_outlined, size: 18, color: AppColors.info),
@@ -203,6 +242,173 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
         ),
       ],
     );
+  }
+
+  // ─── Modal for Admin Direct Message with Verified Badge ───
+  Future<void> _sendAdminMessageModal(Map<String, dynamic> user) async {
+    final titleController = TextEditingController();
+    final messageController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.verified_rounded, color: Colors.blue, size: 24),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'إرسال رسالة رسمية إلى ${user['name'] ?? "المستخدم"}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'ستصل الرسالة للمستخدم باسم "تطبيق بيتك" ومرفقة بعلامة التوثيق الزرقاء 🔵 بالرسائل والإشعارات.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'موضوع الرسالة / العنوان',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.title_rounded),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: messageController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'مضمون الرسالة',
+                hintText: 'اكتب الرسالة المراد توجيهها للمستخدم...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.send_rounded, size: 18),
+            label: const Text('إرسال الآن 🔵'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      final titleText = titleController.text.trim();
+      final msgText = messageController.text.trim();
+      final userId = user['id']?.toString() ?? '';
+
+      if (msgText.isEmpty || userId.isEmpty) return;
+
+      try {
+        final supabase = Supabase.instance.client;
+        const systemAdminId = 'admin_baytak_system';
+        final now = DateTime.now();
+
+        // 1. Ensure System Admin Profile exists in Supabase
+        final existingAdmin = await supabase.from('profiles').select('id').eq('id', systemAdminId).maybeSingle();
+        if (existingAdmin == null) {
+          await supabase.from('profiles').insert({
+            'id': systemAdminId,
+            'name': 'تطبيق بيتك',
+            'phone': '01000000000',
+            'role': 'admin',
+            'verified': true,
+            'created_at': now.toIso8601String(),
+          });
+        }
+
+        // 2. Check or Create Conversation
+        String convId = 'admin_conv_$userId';
+        final existingConv = await supabase.from('conversations').select('id').eq('id', convId).maybeSingle();
+
+        final fullMsg = titleText.isNotEmpty ? '[$titleText]\n$msgText' : msgText;
+
+        if (existingConv == null) {
+          await supabase.from('conversations').insert({
+            'id': convId,
+            'participants': [systemAdminId, userId],
+            'last_message': fullMsg,
+            'last_sender_id': systemAdminId,
+            'last_message_at': now.toIso8601String(),
+            'created_at': now.toIso8601String(),
+          });
+        } else {
+          await supabase.from('conversations').update({
+            'last_message': fullMsg,
+            'last_sender_id': systemAdminId,
+            'last_message_at': now.toIso8601String(),
+          }).eq('id', convId);
+        }
+
+        // 3. Insert Message
+        await supabase.from('messages').insert({
+          'id': 'msg_${now.millisecondsSinceEpoch}',
+          'conversation_id': convId,
+          'sender_id': systemAdminId,
+          'content': fullMsg,
+          'status': 'sent',
+          'type': 'text',
+          'created_at': now.toIso8601String(),
+        });
+
+        // 4. Insert in-app Notification
+        await supabase.from('notifications').insert({
+          'user_id': userId,
+          'title': 'تطبيق بيتك 🔵: ${titleText.isNotEmpty ? titleText : "رسالة رسمية"}',
+          'body': msgText,
+          'type': 'admin_direct_message',
+          'read': false,
+          'created_at': now.toIso8601String(),
+        });
+
+        // 5. Trigger Push Notification
+        await NotificationService.sendAdminDirectMessageNotification(
+          recipientUserId: userId,
+          title: titleText.isNotEmpty ? titleText : 'رسالة رسمية من إدارة التطبيق',
+          messageText: msgText,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم إرسال الرسالة الرسمية بنجاح إلى "${user['name']}" وإشعاره بها 🔵🎉'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('خطأ أثناء إرسال الرسالة: $e'), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    }
   }
 
   void _confirmDelete(Map<String, dynamic> user) {
