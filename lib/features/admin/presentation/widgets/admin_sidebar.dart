@@ -17,13 +17,13 @@ class AdminSidebar extends StatelessWidget {
   });
 
   static const List<AdminSidebarMenuItem> menuItems = [
-    AdminSidebarMenuItem('لوحة المعلومات', Icons.dashboard_rounded, Color(0xFF0D9488)),
+    AdminSidebarMenuItem('لوحة المعلومات', Icons.dashboard_rounded, AppColors.secondary),
     AdminSidebarMenuItem('إدارة المستخدمين', Icons.people_rounded, Color(0xFF3B82F6)),
-    AdminSidebarMenuItem('إدارة العقارات', Icons.home_rounded, Color(0xFF6366F1)),
-    AdminSidebarMenuItem('إدارة المكاتب', Icons.business_rounded, Color(0xFFF59E0B)),
+    AdminSidebarMenuItem('إدارة العقارات', Icons.home_rounded, Color(0xFF132238)),
+    AdminSidebarMenuItem('إدارة المكاتب', Icons.business_rounded, Color(0xFFC5A059)),
     AdminSidebarMenuItem('البلاغات والشكاوى', Icons.report_rounded, Color(0xFFEF4444)),
-    AdminSidebarMenuItem('باقات الاشتراك', Icons.workspace_premium_rounded, Color(0xFF8B5CF6)),
-    AdminSidebarMenuItem('سجل المدفوعات', Icons.payment_rounded, Color(0xFF22C55E)),
+    AdminSidebarMenuItem('باقات الاشتراك', Icons.workspace_premium_rounded, Color(0xFFD4AF37)),
+    AdminSidebarMenuItem('سجل المدفوعات', Icons.payment_rounded, Color(0xFF10B981)),
     AdminSidebarMenuItem('إرسال الإشعارات', Icons.notifications_rounded, Color(0xFF0EA5E9)),
     AdminSidebarMenuItem('إدارة المناطق', Icons.location_city_rounded, Color(0xFFEC4899)),
     AdminSidebarMenuItem('سجلات النظام', Icons.list_alt_rounded, Color(0xFF64748B)),
@@ -32,7 +32,7 @@ class AdminSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: isDark ? const Color(0xFF0B0F19) : const Color(0xFF0F172A),
+      color: isDark ? AppColors.backgroundDark : const Color(0xFF0B1524),
       child: Column(
         children: [
           // ─── Header ─────────────────────────────────────
@@ -41,21 +41,25 @@ class AdminSidebar extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF0D9488), Color(0xFF0891B2)],
-                    ),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.4), width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0D9488).withValues(alpha: 0.4),
-                        blurRadius: 12,
+                        color: AppColors.secondary.withValues(alpha: 0.3),
+                        blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 26),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 const Expanded(
