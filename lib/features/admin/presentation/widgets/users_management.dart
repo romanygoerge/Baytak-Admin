@@ -326,7 +326,7 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
 
       try {
         final supabase = Supabase.instance.client;
-        const systemAdminId = 'admin_baytak_system';
+        const systemAdminId = '00000000-0000-0000-0000-000000000001';
         final now = DateTime.now();
 
         // 1. Ensure System Admin Profile exists in Supabase
