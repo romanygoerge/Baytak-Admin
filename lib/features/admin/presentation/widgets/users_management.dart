@@ -327,79 +327,15 @@ class _UsersManagementState extends ConsumerState<UsersManagement> {
 
       try {
         final supabase = Supabase.instance.client;
-        // Valid UUID for system admin
-        const systemAdminId = '00000000-0000-0000-0000-000000000001';
-        final now = DateTime.now();
 
-        // 1. Ensure System Admin Profile exists in Supabase
-        final existingAdmin = await supabase.from('profiles').select('id').eq('id', systemAdminId).maybeSingle();
-        if (existingAdmin == null) {
-          await supabase.from('profiles').insert({
-            'id': systemAdminId,
-            'name': 'تطبيق بيتك',
-            'phone': '01000000000',
-            'role': 'admin',
-            'verified': true,
-            'created_at': now.toIso8601String(),
-          });
-        }
-
-        // 2. Check for existing conversation between Admin and User
-        final conversations = await supabase.from('conversations').select('id, participants');
-        Map<String, dynamic>? existingConv;
-        for (final c in conversations) {
-          final p = List<String>.from(c['participants'] ?? []);
-          if (p.contains(systemAdminId) && p.contains(userId)) {
-            existingConv = c;
-            break;
-          }
-        }
-
-        String convId;
-        final fullMsg = titleText.isNotEmpty ? '[$titleText]\n$msgText' : msgText;
-
-        if (existingConv == null) {
-          convId = const Uuid().v4();
-          await supabase.from('conversations').insert({
-            'id': convId,
-            'participants': [systemAdminId, userId],
-            'last_message': fullMsg,
-            'last_sender_id': systemAdminId,
-            'last_message_at': now.toIso8601String(),
-            'created_at': now.toIso8601String(),
-          });
-        } else {
-          convId = existingConv['id'].toString();
-          await supabase.from('conversations').update({
-            'last_message': fullMsg,
-            'last_sender_id': systemAdminId,
-            'last_message_at': now.toIso8601String(),
-          }).eq('id', convId);
-        }
-
-        // 3. Insert Message with valid UUID
-        final messageId = const Uuid().v4();
-        await supabase.from('messages').insert({
-          'id': messageId,
-          'conversation_id': convId,
-          'sender_id': systemAdminId,
-          'content': fullMsg,
-          'status': 'sent',
-          'type': 'text',
-          'created_at': now.toIso8601String(),
+        // Call server-side function that has SECURITY DEFINER privileges (bypasses RLS)
+        final result = await supabase.rpc('send_admin_message', params: {
+          'p_user_id': userId,
+          'p_title': titleText,
+          'p_message': msgText,
         });
 
-        // 4. Insert in-app Notification
-        await supabase.from('notifications').insert({
-          'user_id': userId,
-          'title': 'تطبيق بيتك 🔵: ${titleText.isNotEmpty ? titleText : "رسالة رسمية"}',
-          'body': msgText,
-          'type': 'admin_direct_message',
-          'read': false,
-          'created_at': now.toIso8601String(),
-        });
-
-        // 5. Trigger Push Notification via OneSignal
+        // Trigger Push Notification via OneSignal
         await NotificationService.sendAdminDirectMessageNotification(
           recipientUserId: userId,
           title: titleText.isNotEmpty ? titleText : 'رسالة رسمية من إدارة التطبيق',
