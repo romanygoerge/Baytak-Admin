@@ -39,6 +39,10 @@ final notificationsStreamProvider = StreamProvider<List<Map<String, dynamic>>>((
   return ref.watch(adminServiceProvider).streamTable('notifications');
 });
 
+final bannersStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(adminServiceProvider).streamTable('banners');
+});
+
 final activityLogsStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
   return ref.watch(adminServiceProvider).streamTable('activity_logs');
 });

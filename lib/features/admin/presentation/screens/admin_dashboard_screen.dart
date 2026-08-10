@@ -11,6 +11,7 @@ import '../widgets/subscriptions_management.dart';
 import '../widgets/payments_management.dart';
 import '../widgets/notifications_management.dart';
 import '../widgets/areas_management.dart';
+import '../widgets/banners_management.dart';
 import '../widgets/activity_logs_view.dart';
 
 /// Professional Admin Dashboard Screen
@@ -33,6 +34,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     SubscriptionsManagement(),
     PaymentsManagement(),
     NotificationsManagement(),
+    BannersManagement(),
     AreasManagement(),
     ActivityLogsView(),
   ];

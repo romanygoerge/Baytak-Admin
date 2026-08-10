@@ -25,6 +25,7 @@ class AdminSidebar extends StatelessWidget {
     AdminSidebarMenuItem('باقات الاشتراك', Icons.workspace_premium_rounded, Color(0xFFD4AF37)),
     AdminSidebarMenuItem('سجل المدفوعات', Icons.payment_rounded, Color(0xFF10B981)),
     AdminSidebarMenuItem('إرسال الإشعارات', Icons.notifications_rounded, Color(0xFF0EA5E9)),
+    AdminSidebarMenuItem('إدارة البانرات', Icons.view_carousel_rounded, Color(0xFF8B5CF6)),
     AdminSidebarMenuItem('إدارة المناطق', Icons.location_city_rounded, Color(0xFFEC4899)),
     AdminSidebarMenuItem('سجلات النظام', Icons.list_alt_rounded, Color(0xFF64748B)),
   ];

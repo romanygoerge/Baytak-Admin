@@ -230,6 +230,55 @@ class AdminService {
     await _logActivity('delete_area', 'area', areaId, 'حذف منطقة');
   }
 
+  // ─── Banners Management ──────────────────────────────────────────
+
+  Future<void> addBanner(Map<String, dynamic> data) async {
+    await _supabase.from('banners').insert(data);
+    await _logActivity('add_banner', 'banner', null, 'إضافة بانر جديد: ${data['title']}');
+  }
+
+  Future<void> updateBanner(String bannerId, Map<String, dynamic> data) async {
+    await _supabase.from('banners').update(data).eq('id', bannerId);
+    await _logActivity('update_banner', 'banner', bannerId, 'تعديل بانر: ${data['title'] ?? bannerId}');
+  }
+
+  Future<void> toggleBannerActive(String bannerId, bool isActive) async {
+    await _supabase.from('banners').update({'is_active': isActive, 'updated_at': DateTime.now().toIso8601String()}).eq('id', bannerId);
+    await _logActivity('toggle_banner_active', 'banner', bannerId, isActive ? 'تفعيل البانر' : 'إلغاء تفعيل البانر');
+  }
+
+  Future<void> deleteBanner(String bannerId) async {
+    await _supabase.from('banners').delete().eq('id', bannerId);
+    await _logActivity('delete_banner', 'banner', bannerId, 'حذف البانر');
+  }
+
+  Future<String?> uploadBannerImage(Uint8List imageBytes, String fileName) async {
+    try {
+      final path = 'banners/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      await _supabase.storage.from('banners').uploadBinary(
+            path,
+            imageBytes,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+          );
+      final url = _supabase.storage.from('banners').getPublicUrl(path);
+      return url;
+    } catch (e) {
+      debugPrint('Error uploading banner image to storage bucket "banners": $e. Trying "properties" bucket.');
+      try {
+        final path = 'banners/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+        await _supabase.storage.from('properties').uploadBinary(
+              path,
+              imageBytes,
+              fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+            );
+        return _supabase.storage.from('properties').getPublicUrl(path);
+      } catch (e2) {
+        debugPrint('Failed uploading to properties bucket as well: $e2');
+        rethrow;
+      }
+    }
+  }
+
   // ─── Activity Logging ────────────────────────────────────────────
 
   Future<void> _logActivity(String action, String? targetType, String? targetId, String? details) async {
