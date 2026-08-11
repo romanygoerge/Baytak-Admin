@@ -15,30 +15,35 @@ class BannersManagement extends ConsumerStatefulWidget {
 }
 
 class _BannersManagementState extends ConsumerState<BannersManagement> {
-  // Predefined gradients matching app design
+  // Predefined gradients SYNCED with app's AppColors.bannerGradients
   static const List<LinearGradient> bannerGradients = [
+    // 0: Midnight Navy
     LinearGradient(
-      colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+      colors: [Color(0xFF132238), Color(0xFF1E3A5F), Color(0xFF2A4D7C)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
+    // 1: Royal Gold
     LinearGradient(
-      colors: [Color(0xFF059669), Color(0xFF0D9488)],
+      colors: [Color(0xFFC5A059), Color(0xFFE5C158), Color(0xFFF5E096)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
+    // 2: Navy + Gold Blend
     LinearGradient(
-      colors: [Color(0xFFD97706), Color(0xFFEA580C)],
+      colors: [Color(0xFF0B1524), Color(0xFF132238), Color(0xFFC5A059)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
+    // 3: Emerald Green
     LinearGradient(
-      colors: [Color(0xFFE11D48), Color(0xFFC026D3)],
+      colors: [Color(0xFF059669), Color(0xFF0D9488), Color(0xFF10B981)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
+    // 4: Royal Blue
     LinearGradient(
-      colors: [Color(0xFF0284C7), Color(0xFF2563EB)],
+      colors: [Color(0xFF1E40AF), Color(0xFF2563EB), Color(0xFF3B82F6)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
@@ -157,31 +162,72 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
                       _buildMiniStatChip('الموقوفة', '${banners.where((b) => !b.isActive).length}', Colors.grey),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
-                  // Banner Grid Cards Preview
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final crossAxisCount = constraints.maxWidth > 1100
-                          ? 3
-                          : constraints.maxWidth > 700
-                              ? 2
-                              : 1;
-
-                      return GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          mainAxisExtent: 320,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
+                  // Drag & Drop reorder tip
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.15)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.drag_indicator_rounded, size: 18, color: Color(0xFF8B5CF6)),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'اسحب وأفلت البانرات لإعادة ترتيبها — التغييرات تتزامن فوراً مع التطبيق',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF8B5CF6)),
+                          ),
                         ),
-                        itemCount: banners.length,
-                        itemBuilder: (context, index) {
-                          final banner = banners[index];
-                          return _buildBannerCard(banner, isDark);
-                        },
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Banner Reorderable List
+                  ReorderableListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    buildDefaultDragHandles: false,
+                    proxyDecorator: (child, index, animation) {
+                      return Material(
+                        color: Colors.transparent,
+                        elevation: 8,
+                        borderRadius: BorderRadius.circular(16),
+                        shadowColor: AppColors.primary.withValues(alpha: 0.3),
+                        child: child,
+                      );
+                    },
+                    onReorder: (oldIndex, newIndex) async {
+                      if (newIndex > oldIndex) newIndex -= 1;
+                      final movedBanner = banners.removeAt(oldIndex);
+                      banners.insert(newIndex, movedBanner);
+
+                      // Update sort_order for all banners
+                      final service = ref.read(adminServiceProvider);
+                      for (int i = 0; i < banners.length; i++) {
+                        final b = banners[i];
+                        if (b.sortOrder != i + 1) {
+                          await service.updateBanner(b.id, {
+                            'sort_order': i + 1,
+                            'updated_at': DateTime.now().toIso8601String(),
+                          });
+                        }
+                      }
+                    },
+                    itemCount: banners.length,
+                    itemBuilder: (context, index) {
+                      final banner = banners[index];
+                      return ReorderableDragStartListener(
+                        key: ValueKey(banner.id),
+                        index: index,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildBannerCard(banner, isDark, orderIndex: index),
+                        ),
                       );
                     },
                   ),
@@ -252,8 +298,9 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
     );
   }
 
-  Widget _buildBannerCard(BannerModel banner, bool isDark) {
+  Widget _buildBannerCard(BannerModel banner, bool isDark, {int orderIndex = 0}) {
     final gradient = bannerGradients[banner.gradientIndex % bannerGradients.length];
+    final hasImage = banner.imageUrl != null && banner.imageUrl!.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -271,17 +318,48 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Banner Visual Preview Header
+          // Drag Handle
           Container(
-            height: 130,
+            width: 36,
             decoration: BoxDecoration(
-              gradient: banner.imageUrl == null || banner.imageUrl!.isEmpty ? gradient : null,
-              color: banner.imageUrl != null && banner.imageUrl!.isNotEmpty ? Colors.black87 : null,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-              image: banner.imageUrl != null && banner.imageUrl!.isNotEmpty
+              color: isDark ? Colors.white.withValues(alpha: 0.03) : const Color(0xFFF8FAFC),
+              borderRadius: const BorderRadius.horizontal(right: Radius.circular(15)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${orderIndex + 1}',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Icon(Icons.drag_indicator_rounded, size: 20, color: isDark ? Colors.white30 : AppColors.textHint),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+
+          // Banner Visual Preview
+          Container(
+            width: 200,
+            height: 140,
+            margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: !hasImage ? gradient : null,
+              color: hasImage ? Colors.black87 : null,
+              borderRadius: BorderRadius.circular(12),
+              image: hasImage
                   ? DecorationImage(
                       image: NetworkImage(banner.imageUrl!),
                       fit: BoxFit.cover,
@@ -292,20 +370,21 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
             child: Stack(
               children: [
                 // Decorative shape
-                Positioned(
-                  top: -20,
-                  right: -20,
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.1),
+                if (!hasImage)
+                  Positioned(
+                    top: -15,
+                    right: -15,
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                   ),
-                ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -313,63 +392,61 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
                       Row(
                         children: [
                           if (banner.emoji != null && banner.emoji!.isNotEmpty)
-                            Text(banner.emoji!, style: const TextStyle(fontSize: 18)),
-                          if (banner.emoji != null && banner.emoji!.isNotEmpty) const SizedBox(width: 6),
+                            Text(banner.emoji!, style: const TextStyle(fontSize: 16)),
+                          if (banner.emoji != null && banner.emoji!.isNotEmpty) const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               banner.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         banner.subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 10),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
                         child: Text(
                           banner.ctaText,
-                          style: TextStyle(
-                            color: gradient.colors.first,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(color: gradient.colors.first, fontSize: 9, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
                   ),
                 ),
+                // Image badge
                 Positioned(
-                  top: 8,
-                  left: 8,
+                  top: 6,
+                  left: 6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(8),
+                      color: hasImage ? AppColors.success.withValues(alpha: 0.9) : Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
-                      'الترتيب: #${banner.sortOrder}',
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          hasImage ? Icons.image_rounded : Icons.palette_rounded,
+                          size: 10,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          hasImage ? 'صورة' : 'تدرج',
+                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -378,76 +455,102 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
           ),
 
           // Details & Actions
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Target Binding Info
-                Row(
-                  children: [
-                    const Icon(Icons.link_rounded, size: 16, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      'الربط: ',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black87),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 14, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(
+                    banner.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
-                    Expanded(
-                      child: Text(
-                        _getFormattedTargetDescription(banner),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Divider(height: 1),
-                const SizedBox(height: 10),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    banner.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 10),
 
-                // Controls: Active Switch & Action buttons
-                Row(
-                  children: [
-                    // Active Status Switch
-                    Row(
-                      children: [
-                        Transform.scale(
-                          scale: 0.8,
-                          child: Switch(
-                            value: banner.isActive,
-                            activeTrackColor: AppColors.success,
-                            onChanged: (val) async {
-                              await ref.read(adminServiceProvider).toggleBannerActive(banner.id, val);
-                            },
-                          ),
+                  // Target Binding Info
+                  Row(
+                    children: [
+                      const Icon(Icons.link_rounded, size: 14, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          _getFormattedTargetDescription(banner),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w700),
                         ),
-                        Text(
-                          banner.isActive ? 'مفعل' : 'موقوف',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: banner.isActive ? AppColors.success : AppColors.textHint,
-                          ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Divider(height: 1),
+                  const SizedBox(height: 8),
+
+                  // Controls: Active Switch & Action buttons
+                  Row(
+                    children: [
+                      // Active Status Switch
+                      Transform.scale(
+                        scale: 0.75,
+                        child: Switch(
+                          value: banner.isActive,
+                          activeTrackColor: AppColors.success,
+                          onChanged: (val) async {
+                            await ref.read(adminServiceProvider).toggleBannerActive(banner.id, val);
+                          },
                         ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // Edit
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.info),
-                      tooltip: 'تعديل',
-                      onPressed: () => _showBannerFormDialog(context, banner: banner),
-                    ),
-                    // Delete
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
-                      tooltip: 'حذف',
-                      onPressed: () => _confirmDelete(banner),
-                    ),
-                  ],
-                ),
-              ],
+                      ),
+                      Text(
+                        banner.isActive ? 'مفعل' : 'موقوف',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: banner.isActive ? AppColors.success : AppColors.textHint,
+                        ),
+                      ),
+                      const Spacer(),
+                      // Remove image (if exists)
+                      if (hasImage)
+                        IconButton(
+                          icon: const Icon(Icons.hide_image_outlined, size: 17, color: AppColors.warning),
+                          tooltip: 'حذف الصورة (إرجاع التدرج اللوني)',
+                          onPressed: () async {
+                            await ref.read(adminServiceProvider).updateBanner(banner.id, {
+                              'image_url': null,
+                              'updated_at': DateTime.now().toIso8601String(),
+                            });
+                          },
+                        ),
+                      // Edit
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 17, color: AppColors.info),
+                        tooltip: 'تعديل',
+                        onPressed: () => _showBannerFormDialog(context, banner: banner),
+                      ),
+                      // Delete
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded, size: 17, color: AppColors.error),
+                        tooltip: 'حذف',
+                        onPressed: () => _confirmDelete(banner),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
