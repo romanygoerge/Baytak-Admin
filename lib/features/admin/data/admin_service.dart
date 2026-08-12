@@ -35,7 +35,7 @@ class AdminService {
     // 3. Fallback polling loop if Realtime stream failed or closed
     if (!realtimeConnected) {
       while (true) {
-        await Future.delayed(const Duration(seconds: 5));
+        await Future.delayed(const Duration(seconds: 2));
         try {
           final pollingData = await fetchAll(table);
           yield pollingData;
