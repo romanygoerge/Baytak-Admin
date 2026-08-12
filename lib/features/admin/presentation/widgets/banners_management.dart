@@ -510,7 +510,23 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
                           value: banner.isActive,
                           activeTrackColor: AppColors.success,
                           onChanged: (val) async {
-                            await ref.read(adminServiceProvider).toggleBannerActive(banner.id, val);
+                            final messenger = ScaffoldMessenger.of(context);
+                            try {
+                              await ref.read(adminServiceProvider).toggleBannerActive(banner.id, val);
+                              if (!mounted) return;
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(val ? 'تم تفعيل البانر' : 'تم إيقاف البانر'),
+                                  duration: const Duration(seconds: 2),
+                                  backgroundColor: val ? AppColors.success : AppColors.warning,
+                                ),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+                              messenger.showSnackBar(
+                                SnackBar(content: Text('خطأ أثناء التغيير: $e'), backgroundColor: AppColors.error),
+                              );
+                            }
                           },
                         ),
                       ),
@@ -529,10 +545,22 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
                           icon: const Icon(Icons.hide_image_outlined, size: 17, color: AppColors.warning),
                           tooltip: 'حذف الصورة (إرجاع التدرج اللوني)',
                           onPressed: () async {
-                            await ref.read(adminServiceProvider).updateBanner(banner.id, {
-                              'image_url': null,
-                              'updated_at': DateTime.now().toIso8601String(),
-                            });
+                            final messenger = ScaffoldMessenger.of(context);
+                            try {
+                              await ref.read(adminServiceProvider).updateBanner(banner.id, {
+                                'image_url': null,
+                                'updated_at': DateTime.now().toIso8601String(),
+                              });
+                              if (!mounted) return;
+                              messenger.showSnackBar(
+                                const SnackBar(content: Text('تم حذف صورة البانر وإرجاع التدرج اللوني'), backgroundColor: AppColors.info),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+                              messenger.showSnackBar(
+                                SnackBar(content: Text('خطأ أثناء حذف الصورة: $e'), backgroundColor: AppColors.error),
+                              );
+                            }
                           },
                         ),
                       // Edit
@@ -1045,6 +1073,14 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
                             }
 
                             if (ctx.mounted) Navigator.pop(ctx);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(isEditing ? 'تم تعديل البانر بنجاح' : 'تم إضافة البانر بنجاح'),
+                                  backgroundColor: AppColors.success,
+                                ),
+                              );
+                            }
                           } catch (e) {
                             setDialogState(() => isUploading = false);
                             if (ctx.mounted) {
@@ -1079,7 +1115,20 @@ class _BannersManagementState extends ConsumerState<BannersManagement> {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(ctx);
-              await ref.read(adminServiceProvider).deleteBanner(banner.id);
+              try {
+                await ref.read(adminServiceProvider).deleteBanner(banner.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم حذف البانر بنجاح'), backgroundColor: AppColors.success),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('حدث خطأ أثناء الحذف: $e'), backgroundColor: AppColors.error),
+                  );
+                }
+              }
             },
             child: const Text('حذف', style: TextStyle(color: Colors.white)),
           ),
