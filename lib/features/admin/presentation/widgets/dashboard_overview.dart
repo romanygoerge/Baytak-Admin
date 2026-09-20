@@ -111,13 +111,35 @@ class DashboardOverview extends ConsumerWidget {
               DataColumn(label: Text('النوع')),
               DataColumn(label: Text('السعر')),
               DataColumn(label: Text('التاريخ')),
+              DataColumn(label: Text('الإجراءات السريعة')),
             ],
-            rows: pendingProps.take(5).map((p) {
+            rows: pendingProps.take(8).map((p) {
+              final propId = p['id']?.toString() ?? '';
               return DataRow(cells: [
                 DataCell(SizedBox(width: 180, child: Text(p['title'] ?? '', overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)))),
                 DataCell(Text(_typeAr(p['type'] ?? ''))),
                 DataCell(Text('${_formatPrice(p['price'])} ج.م', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary))),
                 DataCell(Text(_formatDate(p['created_at']), style: const TextStyle(fontSize: 12))),
+                DataCell(Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
+                      tooltip: 'قبول وتفعيل الإعلان',
+                      onPressed: () async {
+                        await ref.read(adminServiceProvider).updatePropertyStatus(propId, 'active');
+                      },
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      icon: const Icon(Icons.cancel_rounded, color: AppColors.error, size: 20),
+                      tooltip: 'رفض الإعلان',
+                      onPressed: () async {
+                        await ref.read(adminServiceProvider).updatePropertyStatus(propId, 'rejected');
+                      },
+                    ),
+                  ],
+                )),
               ]);
             }).toList(),
           ),

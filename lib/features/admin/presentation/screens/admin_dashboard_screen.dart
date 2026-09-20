@@ -5,6 +5,7 @@ import '../widgets/admin_sidebar.dart';
 import '../widgets/dashboard_overview.dart';
 import '../widgets/users_management.dart';
 import '../widgets/properties_management.dart';
+import '../widgets/support_conversations.dart';
 import '../widgets/offices_management.dart';
 import '../widgets/reports_management.dart';
 import '../widgets/subscriptions_management.dart';
@@ -29,6 +30,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     DashboardOverview(),
     UsersManagement(),
     PropertiesManagement(),
+    SupportConversations(),
     OfficesManagement(),
     ReportsManagement(),
     SubscriptionsManagement(),

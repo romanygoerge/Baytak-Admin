@@ -20,6 +20,7 @@ class AdminSidebar extends StatelessWidget {
     AdminSidebarMenuItem('لوحة المعلومات', Icons.dashboard_rounded, AppColors.secondary),
     AdminSidebarMenuItem('إدارة المستخدمين', Icons.people_rounded, Color(0xFF3B82F6)),
     AdminSidebarMenuItem('إدارة العقارات', Icons.home_rounded, Color(0xFF132238)),
+    AdminSidebarMenuItem('محادثات المستخدمين', Icons.chat_rounded, Color(0xFF0EA5E9)),
     AdminSidebarMenuItem('إدارة المكاتب', Icons.business_rounded, Color(0xFFC5A059)),
     AdminSidebarMenuItem('البلاغات والشكاوى', Icons.report_rounded, Color(0xFFEF4444)),
     AdminSidebarMenuItem('باقات الاشتراك', Icons.workspace_premium_rounded, Color(0xFFD4AF37)),
